@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 2,
     maxlength: 30,
-    default: 'Исследователь океаанов',
+    default: 'Исследователь океанов',
   },
   avatar: {
     type: String,
