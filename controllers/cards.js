@@ -1,6 +1,6 @@
 const Cards = require('../models/card');
 const BadRequest = require('../errors/BadRequest');
-const NotFound = require('../errors/NotFoundError');
+const NotFoundError = require('../errors/NotFoundError');
 
 const ForbiddenError = require('../errors/ForbiddenError');
 
@@ -26,34 +26,27 @@ const createCard = (req, res, next) => {
 };
 
 const deleteCard = (req, res, next) => {
-  const { cardId } = req.params;
+  const { id: cardId } = req.params;
+  const { userId } = req.user;
 
-  Cards.findById(cardId)
-    .then((card) => {
-      if (!card) {
-        throw new NotFound('Карточка с указанным _id не найдена');
-      }
-      if (card.owner.toString() !== req.user._id) {
-        throw new ForbiddenError('В доступе отказано');
-      }
-
-      return Cards.findByIdAndRemove(cardId)
-        .populate(['owner', 'likes'])
-        .then((myCard) => {
-          res.send({ data: myCard });
-        })
-        .catch((err) => {
-          next(err);
-        });
+  Cards
+    .findById({
+      _id: cardId,
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return next(new BadRequest('Некорректный id карточки'));
-      }
+    .then((card) => {
+      if (!card) throw new NotFoundError('Данные по указанному id не найдены');
 
-      return next(err);
-    });
+      const { owner: cardOwnerId } = card;
+      if (cardOwnerId.valueOf() !== userId) throw new ForbiddenError('Нет прав доступа');
+
+      card
+        .remove()
+        .then(() => res.send({ data: card }))
+        .catch(next);
+    })
+    .catch(next);
 };
+
 /* throw new NotFound('Карточка с указанным _id не найдена');
 })
 .then((card) => {
