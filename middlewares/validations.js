@@ -1,7 +1,5 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 const { celebrate, Joi } = require('celebrate');
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 const isUrl = require('validator/lib/isURL');
 const BadRequest = require('../errors/BadRequest');
 

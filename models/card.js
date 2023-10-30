@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 const isUrl = require('validator/lib/isURL');
 
 const cardSchema = new mongoose.Schema({
