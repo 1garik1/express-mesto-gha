@@ -4,6 +4,7 @@ const User = require('../models/user');
 const NotFound = require('../errors/NotFoundError');
 const BadRequest = require('../errors/BadRequest');
 const ConflictError = require('../errors/ConflictError');
+const AuthError = require('../errors/AuthError');
 
 const getUsers = (req, res, next) => {
   User.find({})
@@ -26,22 +27,6 @@ const getUser = (req, res, next) => {
 
       return next(err);
     });
-  /* const { userId } = req.params;
-
-return User.findById(userId)
-.orFail(() => {
-  throw new NotFound('Пользователь по указанному _id не найден');
-})
-.then((user) => res.status(200).send(user))
-.catch((err) => {
-  if (err.name === 'CastError') {
-    next(new BadRequest('Переданы некорректные данные'));
-  }
-  if (err.message === 'NotFound') {
-    next(new NotFound('Пользователь по указанному _id не найден'));
-  }
-  next(err);
-}); */
 };
 
 const createUser = (req, res, next) => {
@@ -122,13 +107,30 @@ const getCurrentUser = (req, res, next) => {
 const login = (req, res, next) => {
   const { email, password } = req.body;
 
-  return User.findUserByCredentials(email, password)
+  User
+    .findUserByCredentials(email, password)
+    .then(({ _id: userId }) => {
+      if (userId) {
+        const token = jwt.sign(
+          { userId },
+          'yandex-praktikum',
+          { expiresIn: '7d' },
+        );
+
+        return res.send({ _id: token });
+      }
+
+      throw new AuthError('Неправильные почта или пароль');
+    })
+    .catch(next);
+};
+  /* return User.findUserByCredentials(email, password)
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, 'yandex-praktikum', { expiresIn: '7d' });
       res.send({ token });
     })
     .catch(next);
-};
+}; */
 
 module.exports = {
   getUsers,
