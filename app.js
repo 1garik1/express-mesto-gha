@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-// eslint-disable-next-line import/no-extraneous-dependencies
 const { errors } = require('celebrate');
 const routes = require('./routes');
 const { createUser, login } = require('./controllers/users');
