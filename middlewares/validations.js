@@ -13,7 +13,7 @@ const validationUrl = (url) => {
 
 const validationLogin = celebrate({
   body: Joi.object().keys({
-    email: Joi.string().required().email(),
+    email: Joi.string().required().email().required(),
     password: Joi.string().required(),
   }),
 });

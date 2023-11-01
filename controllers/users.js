@@ -1,11 +1,12 @@
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequest = require('../errors/BadRequest');
 const ConflictError = require('../errors/ConflictError');
-const AuthError = require('../errors/AuthError');
-
+// const AuthError = require('../errors/AuthError');
+const { ValidationError } = mongoose.Error;
 const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.status(200).send(users))
@@ -31,26 +32,46 @@ const getUser = (req, res, next) => {
 
 const createUser = (req, res, next) => {
   const {
-    name, about, avatar, email,
+    name, about, avatar, email, password,
   } = req.body;
-  bcrypt.hash(req.body.password, 10)
-    .then((hash) => {
-      User.create({
-        name, about, avatar, email, password: hash,
-      });
-    })
-    .then((user) => res.status(201).send(user))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
+  const passwordHash = bcrypt.hash(password, 10);
+  passwordHash.then((hash) => User.create({
+    name, about, avatar, email, password: hash,
+  }))
+    // Не передаём пароль в ответе
+    .then(() => res.status(201).send({
+      name, about, avatar, email,
+    }))
+    .catch((error) => {
+      if (error instanceof ValidationError) {
         next(new BadRequest('Переданы некорректные данные при создании пользователя'));
-      } else if (err.code === 11000) {
-        next(new ConflictError('Пользователь с таким email уже существует'));
-      } else if (err.message === 'NotFound') {
-        next(new NotFoundError('Пользователь не найден'));
-      }
-      return next(err);
+      } else if (error.code === 11000) {
+        next(new ConflictError('Пользователь с указанной почтой уже есть в системе'));
+      } else { next(error); }
     });
 };
+
+/* const {
+  name, about, avatar, email,
+} = req.body;
+bcrypt.hash(req.body.password, 10)
+ .then((hash) => {
+    User.create({
+      name, about, avatar, email, password: hash,
+    });
+  })
+  .then((user) => res.status(201).send(user))
+  .catch((err) => {
+   / if (err.name === 'ValidationError') {
+      next(new BadRequest('Переданы некорректные данные при создании пользователя'));
+    } else if (err.code === 11000) {
+      next(new ConflictError('Пользователь с таким email уже существует'));
+    } else if (err.status(404)) {
+      next(new NotFoundError('Пользователь не найден'));
+    }
+    return next(err);
+  });
+}; */
 
 const updateProfile = (req, res, next) => {
   const { name, about } = req.body;
@@ -86,18 +107,15 @@ const updateAvatar = (req, res, next) => {
       if (err.name === 'ValidationError') {
         next(new BadRequest('Переданы некорректные данные при обновлении аватара'));
       }
-      return next(err);
+      else { next(err); }
     });
 };
 
 const getCurrentUser = (req, res, next) => {
   User.findById(req.user._id)
-    .orFail(() => {
-      throw new NotFoundError('Пользователь не найден');
-    })
     .then((user) => res.status(200).send({ user }))
     .catch((err) => {
-      if (err.message === 'NotFound') {
+      if (res.status(404)) {
         next(new NotFoundError('Пользователь не найден'));
       }
       return next(err);
@@ -107,30 +125,13 @@ const getCurrentUser = (req, res, next) => {
 const login = (req, res, next) => {
   const { email, password } = req.body;
 
-  User
-    .findUserByCredentials(email, password)
-    .then(({ _id: userId }) => {
-      if (userId) {
-        const token = jwt.sign(
-          { userId },
-          'yandex-praktikum',
-          { expiresIn: '7d' },
-        );
-
-        return res.send({ _id: token });
-      }
-
-      throw new AuthError('Неправильные почта или пароль');
+  return User.findUserByCredentials(email, password)
+    .then((selectedUser) => {
+      const userToken = jwt.sign({ _id: selectedUser._id }, 'yandex-praktikum', { expiresIn: '7d' });
+      res.send({ userToken });
     })
-    .catch(next);
+    .catch((error) => next(error));
 };
-  /* return User.findUserByCredentials(email, password)
-    .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'yandex-praktikum', { expiresIn: '7d' });
-      res.send({ token });
-    })
-    .catch(next);
-}; */
 
 module.exports = {
   getUsers,

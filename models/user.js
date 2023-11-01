@@ -38,22 +38,18 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     select: false,
+    required: true,
   },
 });
 
 userSchema.statics.findUserByCredentials = function (email, password) {
   return this.findOne({ email }).select('+password')
-    .then((user) => {
-      if (!user) {
-        return Promise.reject(new AuthError('Неправильная почта или пароль'));
-      }
-      return bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            return Promise.reject(new AuthError('Неправильная почта или пароль'));
-          }
-          return user;
-        });
+    .then((selectedUser) => {
+      if (!selectedUser) { return Promise.reject(new AuthError(' Неправильная почта или пароль')); }
+      return bcrypt.compare(password, selectedUser.password).then((correct) => {
+        if (!correct) { return Promise.reject(new AuthError(' Неправильная почта или пароль')); }
+        return selectedUser;
+      });
     });
 };
 module.exports = mongoose.model('user', userSchema);

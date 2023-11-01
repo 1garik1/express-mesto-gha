@@ -14,7 +14,7 @@ module.exports = (req, res, next) => {
   try {
     payload = jwt.verify(token, 'yandex-praktikum');
   } catch (err) {
-    next(new AuthError('Необходима авторизация'));
+    return next(new AuthError('Необходима авторизация'));
   }
 
   req.user = payload;
