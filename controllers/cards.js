@@ -47,18 +47,6 @@ const deleteCard = (req, res, next) => {
     .catch(next);
 };
 
-/* throw new NotFound('Карточка с указанным _id не найдена');
-})
-.then((card) => {
-  if (card.owner.toString() === req.user._id) {
-    Cards.findByIdAndRemove(cardId).then(() => res.status(200).send(card));
-  } else {
-    throw new ForbiddenError('В доступе отказано');
-  }
-})
-.catch(next);
-}; */
-
 const likeCard = (req, res, next) => {
   Cards.findByIdAndUpdate(
     req.params.cardId,

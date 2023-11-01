@@ -5,9 +5,11 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
 const BadRequest = require('../errors/BadRequest');
+
 const ConflictError = require('../errors/ConflictError');
-// const AuthError = require('../errors/AuthError');
+
 const { ValidationError } = mongoose.Error;
+
 const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.status(200).send(users))
@@ -39,7 +41,6 @@ const createUser = (req, res, next) => {
   passwordHash.then((hash) => User.create({
     name, about, avatar, email, password: hash,
   }))
-    // Не передаём пароль в ответе
     .then(() => res.status(201).send({
       name, about, avatar, email,
     }))
@@ -52,28 +53,6 @@ const createUser = (req, res, next) => {
     });
 };
 
-/* const {
-  name, about, avatar, email,
-} = req.body;
-bcrypt.hash(req.body.password, 10)
- .then((hash) => {
-    User.create({
-      name, about, avatar, email, password: hash,
-    });
-  })
-  .then((user) => res.status(201).send(user))
-  .catch((err) => {
-   / if (err.name === 'ValidationError') {
-      next(new BadRequest('Переданы некорректные данные при создании пользователя'));
-    } else if (err.code === 11000) {
-      next(new ConflictError('Пользователь с таким email уже существует'));
-    } else if (err.status(404)) {
-      next(new NotFoundError('Пользователь не найден'));
-    }
-    return next(err);
-  });
-}; */
-
 const updateProfile = (req, res, next) => {
   const { name, about } = req.body;
 
@@ -82,7 +61,7 @@ const updateProfile = (req, res, next) => {
     { name, about },
     { new: true, runValidators: true },
   ).orFail(() => {
-    next(new NotFoundError('Пользователь с указанным _id не найден'));
+    next(new NotFoundError('Пользователь по указанному _id не найден'));
   })
     .then((user) => res.status(200).send(user))
     .catch((err) => {
@@ -101,14 +80,13 @@ const updateAvatar = (req, res, next) => {
     { avatar },
     { new: true, runValidators: true },
   ).orFail(() => {
-    next(new NotFoundError('Пользователь с указанным _id не найден'));
+    next(new NotFoundError('Пользователь по указанному _id не найден'));
   })
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequest('Переданы некорректные данные при обновлении аватара'));
-      }
-      else { next(err); }
+      } else { next(err); }
     });
 };
 
