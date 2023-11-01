@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
@@ -46,7 +47,7 @@ const createUser = (req, res, next) => {
       if (error instanceof ValidationError) {
         next(new BadRequest('Переданы некорректные данные при создании пользователя'));
       } else if (error.code === 11000) {
-        next(new ConflictError('Пользователь с указанной почтой уже есть в системе'));
+        next(new ConflictError('Пользователь c указанной почтой уже есть в системе'));
       } else { next(error); }
     });
 };
