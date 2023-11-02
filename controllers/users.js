@@ -56,47 +56,57 @@ const createUser = (req, res, next) => {
 const updateProfile = (req, res, next) => {
   const { name, about } = req.body;
 
-  return User.findByIdAndUpdate(
+  User.findByIdAndUpdate(
     req.user._id,
     { name, about },
     { new: true, runValidators: true },
-  ).orFail(() => {
-    next(new NotFoundError('Пользователь по указанному _id не найден'));
-  })
-    .then((user) => res.status(200).send(user))
+  )
+    .then((user) => {
+      if (!user) {
+        return next(new NotFoundError('Пользователь по указанному _id не найден'));
+      } return res.send({ data: user });
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new BadRequest('Переданы некорректные данные при обновлении профиля'));
-      }
-      return next(err);
+        return next(new ValidationError('Переданы некорректные данные'));
+      } return next(err);
     });
 };
 
 const updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
-  return User.findByIdAndUpdate(
+  User.findByIdAndUpdate(
     req.user._id,
     { avatar },
     { new: true, runValidators: true },
-  ).orFail(() => {
-    next(new NotFoundError('Пользователь по указанному _id не найден'));
-  })
-    .then((user) => res.status(200).send(user))
+  )
+    .then((user) => {
+      if (!user) {
+        return next(new NotFoundError('Пользователь по указанному _id не найден'));
+      } return res.send({ data: user });
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new BadRequest('Переданы некорректные данные при обновлении аватара'));
-      } else { next(err); }
+        return next(new ValidationError('Переданы некорректные данные при обновлении аватара'));
+      } return next(err);
     });
 };
 
 const getCurrentUser = (req, res, next) => {
   User.findById(req.user._id)
-    .then((user) => res.status(200).send({ user }))
-    .catch((err) => {
-      if (res.status(404)) {
-        next(new NotFoundError('Пользователь не найден'));
+    .then((user) => {
+      if (!user) {
+        next(new NotFoundError('Пользователь по указанному _id не найден'));
       }
+
+      return res.send({ data: user });
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new ValidationError('Некорректный id пользователя'));
+      }
+
       return next(err);
     });
 };
@@ -105,11 +115,11 @@ const login = (req, res, next) => {
   const { email, password } = req.body;
 
   return User.findUserByCredentials(email, password)
-    .then((selectedUser) => {
-      const userToken = jwt.sign({ _id: selectedUser._id }, 'yandex-praktikum', { expiresIn: '7d' });
+    .then((user) => {
+      const userToken = jwt.sign({ _id: user._id }, 'yandex-praktikum', { expiresIn: '7d' });
       res.send({ userToken });
     })
-    .catch((error) => next(error));
+    .catch((err) => next(err));
 };
 
 module.exports = {
